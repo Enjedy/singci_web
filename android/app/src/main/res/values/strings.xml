@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">signci</string>
+    <string name="title_activity_main">signci</string>
+    <string name="package_name">com.signci.app</string>
+    <string name="custom_url_scheme">com.signci.app</string>
+</resources>
