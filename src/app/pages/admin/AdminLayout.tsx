@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router';
-import { Map, Users, Settings, LogOut, BarChart3, AlertTriangle, MessageSquare } from 'lucide-react';
+import { Map, Users, Settings, LogOut, BarChart3, AlertTriangle, MessageSquare, Bot, Home } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAppContext } from '../../context/AppContext';
 
@@ -8,10 +8,12 @@ export default function AdminLayout() {
   const { isAuthenticated, user, authLoading } = useAppContext();
 
   const navItems = [
-    { name: 'Tableau de bord', path: '/admin', icon: BarChart3 },
+    { name: 'Accueil', path: '/admin', icon: Home },
+    { name: 'Tableau de bord', path: '/admin/dashboard', icon: BarChart3 },
     { name: 'Signalements', path: '/admin/reports', icon: AlertTriangle },
     { name: 'Carte', path: '/admin/map', icon: Map },
     { name: 'Messagerie', path: '/admin/messages', icon: MessageSquare },
+    { name: 'Assistant Devis', path: '/admin/assistant', icon: Bot },
     { name: 'Équipes', path: '/admin/teams', icon: Users },
     { name: 'Paramètres', path: '/admin/settings', icon: Settings },
   ];

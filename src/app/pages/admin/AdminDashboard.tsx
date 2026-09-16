@@ -1,11 +1,18 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { AlertCircle, Clock, CheckCircle2, TrendingUp, Users, Sparkles, MapPin, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { useAppContext } from '../../context/AppContext';
 
 const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function AdminDashboard() {
   const { reports } = useAppContext();
+  const navigate = useNavigate();
+
+  const goTo = (params: Record<string, string>) => {
+    const qs = new URLSearchParams(params).toString();
+    navigate(`/admin/reports${qs ? '?' + qs : ''}`);
+  };
 
   // Statistics Calculation
   const totalReports = reports.length;
@@ -34,8 +41,11 @@ export default function AdminDashboard() {
     { name: 'Dim', reports: Math.max(1, reports.length % 5), id: 'sun' },
   ];
 
-  const StatCard = ({ title, value, icon: Icon, colorClass, bgColor }: any) => (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center">
+  const StatCard = ({ title, value, icon: Icon, colorClass, bgColor, onClick }: any) => (
+    <button
+      onClick={onClick}
+      className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center hover:shadow-md hover:border-slate-200 active:scale-[0.99] transition-all text-left cursor-pointer"
+    >
       <div className={`w-14 h-14 rounded-xl flex items-center justify-center mr-4 ${bgColor} ${colorClass}`}>
         <Icon className="w-7 h-7" />
       </div>
@@ -43,7 +53,7 @@ export default function AdminDashboard() {
         <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
         <h3 className="text-3xl font-bold text-slate-800 leading-none">{value}</h3>
       </div>
-    </div>
+    </button>
   );
 
   return (
@@ -68,26 +78,28 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="flex gap-4 relative z-10 w-full md:w-auto">
-          <div className="bg-indigo-800/50 rounded-xl p-4 flex-1 md:flex-none border border-indigo-500/30">
+          <button onClick={() => goTo({ priority: 'Haute' })} className="bg-indigo-800/50 hover:bg-indigo-900/50 rounded-xl p-4 flex-1 md:flex-none border border-indigo-500/30 text-left transition-colors cursor-pointer">
             <div className="flex items-center text-indigo-200 mb-1 text-sm font-medium">
               <Zap className="w-4 h-4 mr-1" /> Priorité Haute
             </div>
-            <p className="text-2xl font-bold">{reports.filter(r => r.priority === 'Haute' && r.status === 'En attente').length}</p>
-          </div>
-          <div className="bg-indigo-800/50 rounded-xl p-4 flex-1 md:flex-none border border-indigo-500/30">
+            <p className="text-2xl font-bold text-white">{reports.filter(r => r.priority === 'Haute' && r.status === 'En attente').length}</p>
+            <p className="text-[10px] text-indigo-300 mt-1">Voir le détail →</p>
+          </button>
+          <button onClick={() => goTo({ priority: 'Haute', status: 'En attente' })} className="bg-indigo-800/50 hover:bg-indigo-900/50 rounded-xl p-4 flex-1 md:flex-none border border-indigo-500/30 text-left transition-colors cursor-pointer">
             <div className="flex items-center text-indigo-200 mb-1 text-sm font-medium">
               <MapPin className="w-4 h-4 mr-1" /> Zones critiques
             </div>
-            <p className="text-2xl font-bold">2</p>
-          </div>
+            <p className="text-2xl font-bold text-white">2</p>
+            <p className="text-[10px] text-indigo-300 mt-1">Haute priorité →</p>
+          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Signalements" value={totalReports} icon={AlertCircle} colorClass="text-slate-700" bgColor="bg-slate-100" />
-        <StatCard title="En attente" value={pending} icon={Clock} colorClass="text-amber-600" bgColor="bg-amber-100" />
-        <StatCard title="En cours" value={inProgress} icon={Users} colorClass="text-blue-600" bgColor="bg-blue-100" />
-        <StatCard title="Résolus" value={resolved} icon={CheckCircle2} colorClass="text-emerald-600" bgColor="bg-emerald-100" />
+        <StatCard title="Total Signalements" value={totalReports} icon={AlertCircle} colorClass="text-slate-700" bgColor="bg-slate-100" onClick={() => goTo({})} />
+        <StatCard title="En attente" value={pending} icon={Clock} colorClass="text-amber-600" bgColor="bg-amber-100" onClick={() => goTo({ status: 'En attente' })} />
+        <StatCard title="En cours" value={inProgress} icon={Users} colorClass="text-blue-600" bgColor="bg-blue-100" onClick={() => goTo({ status: 'En cours' })} />
+        <StatCard title="Résolus" value={resolved} icon={CheckCircle2} colorClass="text-emerald-600" bgColor="bg-emerald-100" onClick={() => goTo({ status: 'Résolu' })} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">

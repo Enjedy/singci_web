@@ -1,5 +1,6 @@
 import { MapPin, Sparkles, Building, Map as MapIcon } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
+import ReportImage from '../../components/figma/ReportImage';
 
 export default function History() {
   const { reports } = useAppContext();
@@ -63,11 +64,9 @@ export default function History() {
                       </p>
                     )}
                   </div>
-                  {report.imageUrl && (
-                    <div className="ml-3 w-16 h-16 flex-shrink-0 overflow-hidden rounded-xl">
-                      <img src={report.imageUrl} alt={report.title} className="w-full h-full object-cover" />
-                    </div>
-                  )}
+                  <div className="ml-3 w-16 h-16 flex-shrink-0 overflow-hidden rounded-xl">
+                    <ReportImage src={report.imageUrl} alt={report.title} className="w-full h-full object-cover" />
+                  </div>
                 </div>
               </li>
             ))}

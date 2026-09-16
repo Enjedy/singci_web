@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { MapPin as MapPinIcon, Camera as CameraIcon, Image as ImageIconLucide, Navigation, Sparkles, Building, Map as MapIcon, ChevronRight } from 'lucide-react';
+import { MapPin as MapPinIcon, Camera as CameraIcon, Image as ImageIconLucide, Navigation, Sparkles, Building, Map as MapIcon, ChevronRight, X } from 'lucide-react';
 import { useAppContext, SignalType } from '../../context/AppContext';
+import { REPORT_PLACEHOLDER_IMG } from '../../components/figma/ReportImage';
 
 const CATEGORIES = {
   'Espace public': [
@@ -44,6 +45,7 @@ export default function NewReport() {
   
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     signalType: 'Espace public' as SignalType,
@@ -53,6 +55,19 @@ export default function NewReport() {
     location: '',
     imageUrl: ''
   });
+
+  const handleImagePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Aperçu immédiat en local (fonctionne hors-ligne, sans CDN)
+    const previewUrl = URL.createObjectURL(file);
+    setFormData(prev => ({ ...prev, imageUrl: previewUrl }));
+  };
+
+  const clearImage = () => {
+    setFormData(prev => ({ ...prev, imageUrl: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +84,7 @@ export default function NewReport() {
       addReport({
         ...formData,
         citizenId: 'CIT-123',
-        imageUrl: formData.imageUrl || 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&q=80&w=400',
+        imageUrl: formData.imageUrl || REPORT_PLACEHOLDER_IMG,
       });
       navigate('/citizen/history');
     }, 2000);
@@ -205,16 +220,46 @@ export default function NewReport() {
             {/* Photo Upload */}
             <div className="space-y-3">
               <label className="text-sm font-semibold text-slate-700">Photo (Optionnelle)</label>
-              <div className="grid grid-cols-2 gap-4">
-                <button type="button" className="flex flex-col items-center justify-center p-6 bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl text-blue-600 hover:bg-blue-100 transition-colors">
-                  <CameraIcon className="w-8 h-8 mb-2" />
-                  <span className="text-sm font-medium">Appareil</span>
-                </button>
-                <button type="button" className="flex flex-col items-center justify-center p-6 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:bg-slate-100 transition-colors">
-                  <ImageIconLucide className="w-8 h-8 mb-2" />
-                  <span className="text-sm font-medium">Galerie</span>
-                </button>
-              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImagePicked}
+                className="hidden"
+                id="report-image"
+              />
+              {formData.imageUrl ? (
+                <div className="relative">
+                  <div className="w-full h-48 rounded-2xl overflow-hidden border border-slate-200">
+                    <img src={formData.imageUrl} alt="Aperçu du signalement" className="w-full h-full object-cover" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearImage}
+                    className="absolute top-2 right-2 p-1.5 bg-slate-900/70 text-white rounded-full hover:bg-slate-900 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <p className="text-xs text-slate-400 mt-1">Image sélectionnée (aperçu local). Le rendu sera adapté côté serveur.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <label
+                    htmlFor="report-image"
+                    className="flex flex-col items-center justify-center p-6 bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl text-blue-600 hover:bg-blue-100 cursor-pointer transition-colors"
+                  >
+                    <CameraIcon className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium">Appareil photo</span>
+                  </label>
+                  <label
+                    htmlFor="report-image"
+                    className="flex flex-col items-center justify-center p-6 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 hover:bg-slate-100 cursor-pointer transition-colors"
+                  >
+                    <ImageIconLucide className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium">Galerie</span>
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* Description */}

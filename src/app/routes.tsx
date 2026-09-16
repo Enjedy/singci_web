@@ -9,11 +9,13 @@ import History from './pages/citizen/History';
 import Profile from './pages/citizen/Profile';
 
 import AdminLayout from './pages/admin/AdminLayout';
+import AdminHome from './pages/admin/AdminHome';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageReports from './pages/admin/ManageReports';
 import AdminMap from './pages/admin/AdminMap';
 import AdminMessages from './pages/admin/AdminMessages';
 import AdminTeams from './pages/admin/AdminTeams';
+import AdminQuoteAgent from './pages/admin/AdminQuoteAgent';
 import AdminSettings from './pages/admin/AdminSettings';
 
 // Mock components for unimplemented routes
@@ -45,10 +47,12 @@ export const router = createBrowserRouter([
     path: "/admin",
     Component: AdminLayout,
     children: [
-      { index: true, Component: AdminDashboard },
+      { index: true, Component: AdminHome },
+      { path: "dashboard", Component: AdminDashboard },
       { path: "reports", Component: ManageReports },
       { path: "map", Component: AdminMap },
       { path: "messages", Component: AdminMessages },
+      { path: "assistant", Component: AdminQuoteAgent },
       { path: "teams", Component: AdminTeams },
       { path: "settings", Component: AdminSettings },
     ],
