@@ -108,6 +108,14 @@ export const assignTeamToReport = async (id: string, team: string | null) => {
   if (error) console.error('Supabase assign team error:', error.message);
 };
 
+export const deleteReport = async (id: string) => {
+  const { error } = await supabase
+    .from('signalement')
+    .delete()
+    .eq('id', id);
+  if (error) console.error('Supabase delete error:', error.message);
+};
+
 // ---- Realtime subscription ----------------------------------------------
 
 export type ReportChangeEvent = {

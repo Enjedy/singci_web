@@ -76,7 +76,7 @@ export default function AdminHome() {
     { name: 'Signalements', desc: `${pending} en attente d'action`, path: '/admin/reports', icon: AlertTriangle, color: 'text-amber-300' },
     { name: 'Tableau de bord', desc: 'Statistiques en temps réel', path: '/admin/dashboard', icon: BarChart3, color: 'text-sky-300' },
     { name: 'Messagerie', desc: 'Répondre aux citoyens', path: '/admin/messages', icon: MessageSquare, color: 'text-violet-300' },
-    { name: 'Assistant Devis', desc: 'Estimer un coût d\'intervention', path: '/admin/assistant', icon: Bot, color: 'text-emerald-300' },
+    { name: 'Assistant Éclairage', desc: 'Estimer les travaux d\'éclairage', path: '/admin/assistant', icon: Bot, color: 'text-emerald-300' },
     { name: 'Équipes', desc: 'Gérer vos équipes terrain', path: '/admin/teams', icon: Users, color: 'text-rose-300' },
     { name: 'Carte', desc: 'Visualiser les zones critiques', path: '/admin/map', icon: Map, color: 'text-cyan-300' },
   ];

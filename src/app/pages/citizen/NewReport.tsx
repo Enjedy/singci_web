@@ -1,43 +1,35 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { MapPin as MapPinIcon, Camera as CameraIcon, Image as ImageIconLucide, Navigation, Sparkles, Building, Map as MapIcon, ChevronRight, X } from 'lucide-react';
+import { MapPin as MapPinIcon, Camera as CameraIcon, Image as ImageIconLucide, Navigation, Sparkles, Zap, ChevronRight, X, Check } from 'lucide-react';
 import { useAppContext, SignalType } from '../../context/AppContext';
 import { REPORT_PLACEHOLDER_IMG } from '../../components/figma/ReportImage';
 
-const CATEGORIES = {
-  'Espace public': [
-    {
-      name: 'Voirie',
-      subs: ['Nid de poule', 'Trottoir endommagé', 'Signalisation manquante', 'Autre']
-    },
-    {
-      name: 'Éclairage public',
-      subs: ['Panne d\'éclairage', 'Lampadaire clignotant', 'Autre']
-    },
-    {
-      name: 'Gestion de l\'eau',
-      subs: ['Fuite sur la voie', 'Bouche d\'égout bouchée', 'Autre']
-    },
-    {
-      name: 'Propreté',
-      subs: ['Dépôt sauvage', 'Poubelle pleine', 'Autre']
-    }
-  ],
-  'Bâtiment communal': [
-    {
-      name: 'École',
-      subs: ['Plomberie', 'Électricité', 'Chauffage', 'Dégradation matérielle']
-    },
-    {
-      name: 'Mairie / Bureau',
-      subs: ['Plomberie', 'Électricité', 'Climatisation', 'Autre']
-    },
-    {
-      name: 'Complexe sportif',
-      subs: ['Matériel endommagé', 'Vestiaires', 'Autre']
-    }
-  ]
-};
+const LIGHTING_ISSUES = [
+  {
+    name: 'Panne d\'éclairage',
+    desc: 'Le lampadaire ne s\'allume plus alors qu\'il devrait éclairer.',
+  },
+  {
+    name: 'Lampadaire éteint',
+    desc: 'La lumière est éteinte (capteur ou ligne d\'alimentation).',
+  },
+  {
+    name: 'Lampadaire clignotant',
+    desc: 'Il clignote ou vacille de façon anormale.',
+  },
+  {
+    name: 'Lampadaire cassé',
+    desc: 'Mât, luminaire ou ampoule endommagé(e) ou brisé(e).',
+  },
+  {
+    name: 'Colonne / câblage défectueux',
+    desc: 'Câble apparent, colonne ouverte, coffret endommagé.',
+  },
+  {
+    name: 'Autre',
+    desc: 'Toute autre anomalie d\'éclairage public.',
+  },
+];
 
 export default function NewReport() {
   const { addReport } = useAppContext();
@@ -49,7 +41,7 @@ export default function NewReport() {
 
   const [formData, setFormData] = useState({
     signalType: 'Espace public' as SignalType,
-    category: '',
+    category: 'Éclairage public',
     subCategory: '',
     description: '',
     location: '',
@@ -72,7 +64,7 @@ export default function NewReport() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 1) {
-      if (!formData.category) return;
+      if (!formData.subCategory) return;
       setStep(2);
       return;
     }
@@ -94,9 +86,6 @@ export default function NewReport() {
     setFormData(prev => ({ ...prev, location: 'Avenue des Champs-Élysées, Paris' }));
   };
 
-  const availableCategories = CATEGORIES[formData.signalType];
-  const selectedCategoryObj = availableCategories.find(c => c.name === formData.category);
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center bg-blue-600 h-full min-h-[600px] text-white p-8 text-center relative overflow-hidden">
@@ -104,7 +93,7 @@ export default function NewReport() {
         <Sparkles className="w-16 h-16 animate-pulse mb-6 text-blue-200 relative z-10" />
         <h2 className="text-2xl font-bold mb-4 relative z-10">Transmission en cours...</h2>
         <p className="text-blue-100 mb-8 relative z-10 max-w-sm">
-          Notre système achemine directement votre signalement au <strong>service technique concerné</strong> en fonction de la catégorie choisie.
+          Votre signalement est transmis <strong>directement à l'équipe d'éclairage public</strong> (agent électricien) pour une prise en charge rapide.
         </p>
         <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin relative z-10"></div>
       </div>
@@ -134,80 +123,46 @@ export default function NewReport() {
         
         {step === 1 && (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-            {/* Type de lieu */}
+            {/* Anomalie d'éclairage */}
             <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700">Où se situe le problème ?</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData({...formData, signalType: 'Espace public', category: '', subCategory: ''});
-                  }}
-                  className={`flex flex-col items-center p-4 rounded-2xl border-2 transition-all ${
-                    formData.signalType === 'Espace public' 
-                      ? 'border-blue-600 bg-blue-50 text-blue-700' 
-                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
-                  <MapIcon className="w-8 h-8 mb-2" />
-                  <span className="text-sm font-bold">Espace public</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData({...formData, signalType: 'Bâtiment communal', category: '', subCategory: ''});
-                  }}
-                  className={`flex flex-col items-center p-4 rounded-2xl border-2 transition-all ${
-                    formData.signalType === 'Bâtiment communal' 
-                      ? 'border-blue-600 bg-blue-50 text-blue-700' 
-                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
-                  <Building className="w-8 h-8 mb-2" />
-                  <span className="text-sm font-bold text-center">Bâtiment communal</span>
-                </button>
+              <label className="text-sm font-semibold text-slate-700 flex items-center">
+                <Zap className="w-4 h-4 text-amber-500 mr-1.5" /> Type de panne d'éclairage
+              </label>
+              <p className="text-xs text-slate-400 -mt-1">
+                Tous les signalements d'éclairage public partent directement à l'équipe électrique.
+              </p>
+              <div className="space-y-2">
+                {LIGHTING_ISSUES.map(issue => {
+                  const selected = formData.subCategory === issue.name;
+                  return (
+                    <button
+                      type="button"
+                      key={issue.name}
+                      onClick={() => setFormData({ ...formData, subCategory: issue.name })}
+                      className={`w-full flex items-start text-left p-4 rounded-2xl border-2 transition-all ${
+                        selected
+                          ? 'border-blue-600 bg-blue-50 text-blue-700'
+                          : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mr-3 transition-colors ${
+                        selected ? 'border-blue-600 bg-blue-600' : 'border-slate-300 bg-white'
+                      }`}>
+                        {selected && <Check className="w-3 h-3 text-white" />}
+                      </span>
+                      <span>
+                        <span className="block text-sm font-bold">{issue.name}</span>
+                        <span className="block text-xs font-medium mt-0.5">{issue.desc}</span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-
-            {/* Category */}
-            <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700">Catégorie</label>
-              <select 
-                required
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value, subCategory: ''})}
-                className="w-full px-4 py-4 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm font-medium text-slate-700 appearance-none"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em' }}
-              >
-                <option value="" disabled>Sélectionner une catégorie</option>
-                {availableCategories.map(cat => (
-                  <option key={cat.name} value={cat.name}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sub-Category */}
-            {selectedCategoryObj && (
-              <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                <label className="text-sm font-semibold text-slate-700">Précisez le problème</label>
-                <select 
-                  required
-                  value={formData.subCategory}
-                  onChange={(e) => setFormData({...formData, subCategory: e.target.value})}
-                  className="w-full px-4 py-4 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm font-medium text-slate-700 appearance-none"
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em' }}
-                >
-                  <option value="" disabled>Détail...</option>
-                  {selectedCategoryObj.subs.map(sub => (
-                    <option key={sub} value={sub}>{sub}</option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             <button 
               type="submit"
-              disabled={!formData.category || !formData.subCategory}
+              disabled={!formData.subCategory}
               className="w-full mt-8 bg-blue-600 disabled:bg-blue-300 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 active:scale-[0.98] transition-all flex justify-center items-center"
             >
               Suivant <ChevronRight className="w-5 h-5 ml-1" />
@@ -269,7 +224,7 @@ export default function NewReport() {
                 required
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                placeholder="Décrivez l'anomalie rencontrée..."
+                placeholder="Décrivez la panne d'éclairage rencontrée..."
                 rows={4}
                 className="w-full px-4 py-4 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm resize-none text-slate-700"
               />
@@ -298,6 +253,13 @@ export default function NewReport() {
               >
                 <Navigation className="w-4 h-4 mr-2" /> Me géolocaliser automatiquement
               </button>
+            </div>
+
+            <div className="bg-blue-50/60 border border-blue-100 rounded-xl px-4 py-3 text-xs text-slate-600 flex items-start">
+              <Zap className="w-4 h-4 text-amber-500 mr-2 mt-0.5 flex-shrink-0" />
+              <span>
+                Cette panne d'éclairage sera transmise <strong>directement à l'agent éclairage public</strong> (équipe électrique) dès l'envoi.
+              </span>
             </div>
 
             <button 

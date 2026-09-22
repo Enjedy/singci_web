@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppContext } from '../../context/AppContext';
 import L from 'leaflet';
-import { Search, Navigation, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { Search, Navigation, AlertCircle, CheckCircle2, Clock, MapPin, Layers } from 'lucide-react';
 
 // Custom icons using Lucide SVGs wrapped in divIcon
 const createCustomIcon = (colorClass: string) => {
@@ -22,11 +22,11 @@ const iconPending = createCustomIcon('bg-amber-500');
 const iconInProgress = createCustomIcon('bg-blue-500');
 const iconResolved = createCustomIcon('bg-emerald-500');
 
-// Mock coordinates for Abidjan/Paris since locations are strings in AppContext
+// Mock coordinates for Antananarivo (Analamanga) since locations are strings in AppContext
 const MOCK_COORDS: Record<string, [number, number]> = {
-  'REP-001': [48.8566, 2.3522],
-  'REP-002': [48.8584, 2.3488],
-  'REP-003': [48.8606, 2.3376],
+  'REP-001': [-18.9146, 47.5312],
+  'REP-002': [-18.8792, 47.5511],
+  'REP-003': [-18.9004, 47.5261],
 };
 
 function ChangeView({ center }: { center: [number, number] }) {
@@ -38,7 +38,7 @@ function ChangeView({ center }: { center: [number, number] }) {
 export default function AdminMap() {
   const { reports } = useAppContext();
   const [searchQuery, setSearchQuery] = useState('');
-  const [center, setCenter] = useState<[number, number]>([48.8566, 2.3522]); // Default center (Paris)
+  const [center, setCenter] = useState<[number, number]>([-18.8792, 47.5079]); // Antananarivo (Analamanga)
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -74,6 +74,17 @@ export default function AdminMap() {
     r.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const zones = useMemo(() => {
+    const counts = new Map<string, number>();
+    filteredReports.forEach(r => {
+      const zone = r.location || 'Zone inconnue';
+      counts.set(zone, (counts.get(zone) || 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [filteredReports]);
+
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col gap-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100 z-10">
@@ -104,7 +115,8 @@ export default function AdminMap() {
           <ChangeView center={center} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
           />
           <ZoomControl position="bottomright" />
 
@@ -115,13 +127,19 @@ export default function AdminMap() {
               icon={getStatusIcon(report.status)}
             >
               <Popup className="rounded-xl overflow-hidden shadow-lg border-0">
-                <div className="p-1 min-w-[200px]">
+                <div className="p-1 min-w-[220px]">
                   <div className="flex justify-between items-start mb-2">
                     {getStatusBadge(report.status)}
                     {report.priority === 'Haute' && <span className="text-red-600"><AlertCircle className="w-4 h-4" /></span>}
                   </div>
                   <h3 className="font-bold text-slate-800 text-sm mb-1">{report.title}</h3>
-                  <p className="text-xs text-slate-500 mb-2 font-medium">{report.location}</p>
+                  <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1.5 mb-2">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <p className="text-xs font-bold text-emerald-800 truncate">{report.location}</p>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-mono mb-2">
+                    {report.coords[0].toFixed(4)}, {report.coords[1].toFixed(4)}
+                  </p>
                   <p className="text-xs text-slate-600 mb-3 line-clamp-2">{report.description}</p>
                   
                   {report.assignedTeam && (
@@ -146,6 +164,25 @@ export default function AdminMap() {
             </Marker>
           ))}
         </MapContainer>
+
+        {/* Zones Overlay */}
+        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-slate-100 z-[400] w-56 dark:bg-slate-900/90">
+          <h4 className="text-xs font-bold text-slate-800 mb-2 uppercase tracking-wider flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-emerald-600" /> Zones actives
+          </h4>
+          <div className="space-y-1.5 max-h-40 overflow-y-auto">
+            {zones.length === 0 && (
+              <p className="text-xs text-slate-400">Aucune zone pour l'instant.</p>
+            )}
+            {zones.map(zone => (
+              <div key={zone.name} className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                <MapPin className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                <span className="flex-1 truncate" title={zone.name}>{zone.name}</span>
+                <span className="bg-emerald-100 text-emerald-700 rounded-full px-1.5 text-[10px] font-bold">{zone.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Legend Overlay */}
         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-slate-100 z-[400]">

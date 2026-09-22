@@ -43,3 +43,10 @@ Thumbs.db
 .tmp/
 *.tmp
 .image
+
+# Python backend
+backend/__pycache__/
+backend/models/
+backend/*.egg-info/
+.venv/
+venv/

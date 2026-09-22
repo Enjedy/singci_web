@@ -1,9 +1,12 @@
-import { MapPin, Sparkles, Building, Map as MapIcon } from 'lucide-react';
+import { useState } from 'react';
+import { MapPin, Sparkles, Building, Map as MapIcon, Trash2 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import ReportImage from '../../components/figma/ReportImage';
+import { Report } from '../../context/AppContext';
 
 export default function History() {
-  const { reports } = useAppContext();
+  const { reports, deleteReport } = useAppContext();
+  const [confirmDelete, setConfirmDelete] = useState<Report | null>(null);
   
   // Filter for the mock citizen
   const myReports = reports.filter(r => r.citizenId === 'CIT-123');
@@ -64,8 +67,17 @@ export default function History() {
                       </p>
                     )}
                   </div>
-                  <div className="ml-3 w-16 h-16 flex-shrink-0 overflow-hidden rounded-xl">
-                    <ReportImage src={report.imageUrl} alt={report.title} className="w-full h-full object-cover" />
+                  <div className="ml-3 flex flex-col items-end justify-between flex-shrink-0">
+                    <div className="w-16 h-16 overflow-hidden rounded-xl">
+                      <ReportImage src={report.imageUrl} alt={report.title} className="w-full h-full object-cover" />
+                    </div>
+                    <button
+                      onClick={() => setConfirmDelete(report)}
+                      title="Supprimer ce signalement"
+                      className="mt-2 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </li>
@@ -73,6 +85,32 @@ export default function History() {
           </ul>
         )}
       </div>
+
+      {/* Confirm delete */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onClick={() => setConfirmDelete(null)}>
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="font-bold text-slate-800 text-lg">Supprimer ce signalement ?</h3>
+            <p className="text-sm text-slate-500 mt-2">
+              Le signalement « {confirmDelete.title} » sera définitivement supprimé.
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors">
+                Annuler
+              </button>
+              <button
+                onClick={() => { deleteReport(confirmDelete.id); setConfirmDelete(null); }}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-colors"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,158 +1,157 @@
-// Moteur d'estimation de devis par catégorie (en Ariary, MGA).
-// Utilisé par l'agent chat admin (AdminQuoteAgent) et le détail d'un signalement.
+// Moteur d'estimation des travaux requis pour l'éclairage public.
+// L'agent fournit une ESTIMATION des travaux à prévoir (étapes, moyens, délai) :
+// aucun montant ni prix fixe n'est affiché, il s'agit uniquement d'un conseil.
 
-export interface QuoteLine {
+export interface WorkLine {
   label: string;
-  amount: number;
 }
 
-export interface Quote {
+export type Complexity = 'Légère' | 'Modérée' | 'Importante';
+
+export interface WorkEstimate {
   category: string;
   subCategory?: string;
-  lines: QuoteLine[];
-  mainLabor: QuoteLine;
-  total: number;
+  lines: WorkLine[];
+  mainWork: string;
   delay: string;
+  complexity: Complexity;
   disclaimer: string;
 }
 
-interface QuoteRule {
+interface EstimateRule {
   category: string;
   keywords: string[];
-  lines: QuoteLine[];
-  labor: QuoteLine;
+  lines: string[];
+  mainWork: string;
   delay: string;
+  complexity: Complexity;
 }
 
-export const formatAR = (n: number) =>
-  n.toLocaleString('fr-FR').replace(/\u202f/g, ' ') + ' Ar';
-
-const RULES: QuoteRule[] = [
+const RULES: EstimateRule[] = [
   {
-    category: 'Gestion de l\'eau',
-    keywords: ['eau', 'fuite', 'coupure', 'égoût', 'égout', 'canalisation', 'plomberie', 'robinet', 'tuyau'],
+    category: 'Lampadaire clignotant',
+    keywords: ['clignot', 'scintill', 'vacille'],
     lines: [
-      { label: 'Tuyau PVC ∅ 63mm (2m)', amount: 5000 },
-      { label: 'Joint & raccords', amount: 2500 },
-      { label: 'Sable & ciment (scellement)', amount: 4000 },
-      { label: 'Petit outillage', amount: 2000 },
+      'Vérification des contacts et du ballast',
+      'Remplacement du condensateur / starter',
+      'Resserrement des connexions',
     ],
-    labor: { label: 'Main d\'œuvre (plombier, 1/2 journée)', amount: 22000 },
-    delay: 'Intervention sous 24h',
+    mainWork: 'Équipe éclairage : 1 technicien, intervention rapide',
+    delay: 'Intervention sous 72h',
+    complexity: 'Légère',
   },
   {
-    category: 'Voirie',
-    keywords: ['nid de poule', 'route', 'trottoir', 'voirie', 'chaussée', 'trou', 'accotement', 'bitume'],
+    category: 'Lampadaire cassé',
+    keywords: ['cassé', 'casse', 'brisé', 'fracass', 'mât', 'lampadaire tombé'],
     lines: [
-      { label: 'Gravats & enrobé à froid (1 sac)', amount: 12000 },
-      { label: 'Compactage / location mini-pelle', amount: 25000 },
-      { label: 'Signalisation temporaire', amount: 8000 },
-      { label: 'Sécurité chantier (cônes)', amount: 6000 },
+      'Sécurisation de la zone (balisage)',
+      'Remplacement du mât / du luminaire endommagé',
+      'Raccordement électrique et test',
     ],
-    labor: { label: 'Main d\'œuvre (2 ouvriers, 1 jour)', amount: 35000 },
-    delay: 'Traitement en 3 à 5 jours ouvrés',
+    mainWork: 'Équipe éclairage : nacelle + 2 techniciens',
+    delay: 'Intervention sous 5 jours ouvrés',
+    complexity: 'Importante',
   },
   {
-    category: 'Éclairage public',
-    keywords: ['éclairage', 'lampadaire', 'ampoule', 'lumière', 'projecteur', 'électricité', 'câble', 'électrique'],
+    category: 'Lampadaire éteint',
+    keywords: ['éteint', "ne s\\'allume", "ne s\\'allument", 'ne fonctionne', 'sombre', 'pas de lumière'],
     lines: [
-      { label: 'Amphibole LED 100W', amount: 45000 },
-      { label: 'Câble électrique (20m)', amount: 15000 },
-      { label: 'Connectique & dominos', amount: 3000 },
-      { label: 'Nacelle / élévateur', amount: 20000 },
+      'Vérification de la cellule photodétectrice',
+      'Réglage / remplacement du capteur crépusculaire',
+      'Contrôle de la ligne d\'alimentation',
     ],
-    labor: { label: 'Main d\'œuvre (électricien, 1/2 journée)', amount: 25000 },
+    mainWork: 'Équipe éclairage : 1 technicien, intervention standard',
     delay: 'Intervention sous 48h',
+    complexity: 'Modérée',
   },
   {
-    category: 'Propreté',
-    keywords: ['déchet', 'ordures', 'poubelle', 'sauvage', 'propreté', 'collecte', 'encombrant', 'immondice'],
+    category: 'Colonne / câblage défectueux',
+    keywords: ['câble', 'cablage', 'câblage', 'colonne', 'coffret', 'fusible', 'court-circuit', 'disjoncteur'],
     lines: [
-      { label: 'Location benne 3m³', amount: 30000 },
-      { label: 'Sacs industriels & gants', amount: 5000 },
-      { label: 'Transport / benne de collecte', amount: 15000 },
+      'Mise hors tension sécurisée',
+      'Remplacement du câble / de la colonne endommagée',
+      'Réparation du coffret de commande',
+      'Remise sous tension et vérifications',
     ],
-    labor: { label: 'Main d\'œuvre (2 agents, 1/2 journée)', amount: 20000 },
-    delay: 'Collecte sous 48h',
+    mainWork: 'Équipe éclairage : nacelle + 2 techniciens',
+    delay: 'Intervention sous 48h',
+    complexity: 'Importante',
   },
   {
-    category: 'École & bâtiment communal',
-    keywords: ['école', 'bâtiment', 'classe', 'toiture', 'mairie', 'municipal', 'fenêtre', 'toit', 'peinture'],
+    category: 'Panne d\'éclairage',
+    keywords: ['panne', 'éclairage public', 'lumière'],
     lines: [
-      { label: 'Matériaux de réparation', amount: 20000 },
-      { label: 'Peinture & primaire', amount: 18000 },
-      { label: 'Quincaillerie (visserie, scellement)', amount: 7000 },
+      'Diagnostic de la colonne d\'éclairage',
+      'Remplacement de l\'ampoule / du module LED',
+      'Contrôle du circuit et du disjoncteur',
     ],
-    labor: { label: 'Main d\'œuvre (2 ouvriers, 1 jour)', amount: 38000 },
-    delay: 'Traitement en 5 à 7 jours ouvrés',
-  },
-  {
-    category: 'Complexe sportif',
-    keywords: ['sport', 'stade', 'vestiaire', 'terrain', 'complexe', 'matériel sportif', 'but', 'panier'],
-    lines: [
-      { label: 'Matériel sportif / filet', amount: 25000 },
-      { label: 'Réparations mobilières', amount: 15000 },
-      { label: 'Vestiaires (vitrerie, robinetterie)', amount: 20000 },
-    ],
-    labor: { label: 'Main d\'œuvre (technicien, 1 jour)', amount: 30000 },
-    delay: 'Traitement en 5 à 7 jours ouvrés',
+    mainWork: 'Équipe éclairage : 1 technicien, intervention standard',
+    delay: 'Intervention sous 48h',
+    complexity: 'Modérée',
   },
 ];
 
-const FALLBACK = {
-  category: 'Divers',
+const FALLBACK: EstimateRule = {
+  category: 'Éclairage public (autre)',
+  keywords: [],
   lines: [
-    { label: 'Fournitures / petits matériaux', amount: 15000 },
-    { label: 'Transport', amount: 10000 },
+    'Inspection technique sur site',
+    'Diagnostic de la nature de la panne',
   ],
-  labor: { label: 'Main d\'œuvre estimée', amount: 20000 },
+  mainWork: 'Équipe éclairage : 1 technicien',
   delay: 'Estimée après inspection sur site',
+  complexity: 'Modérée',
 };
 
-export const getAllQuoteCategories = () => [
-  ...new Set<string>(RULES.map(r => r.category)),
-];
-
-export const estimateQuote = (category: string, subCategory?: string): Quote => {
+export const estimateWork = (category: string, subCategory?: string): WorkEstimate => {
   const catLower = (category + ' ' + (subCategory || '')).toLowerCase();
-  const rule =
-    RULES.find(r => r.keywords.some(k => catLower.includes(k))) ||
-    (category === 'Propreté'
-      ? RULES[3]
-      : category === 'Éclairage public'
-        ? RULES[2]
-        : category === 'Voirie'
-          ? RULES[1]
-          : category.includes('eau')
-            ? RULES[0]
-            : undefined);
-
-  const q = rule || FALLBACK;
-  const total = q.lines.reduce((s, l) => s + l.amount, 0) + q.labor.amount;
+  const rule = RULES.find(r => r.keywords.some(k => catLower.includes(k))) || FALLBACK;
 
   return {
-    category: rule ? q.category : category,
-    subCategory: rule ? subCategory : undefined,
-    lines: q.lines,
-    mainLabor: q.labor,
-    total,
-    delay: q.delay,
-    disclaimer: 'Devis estimatif hors taxes. Montant définitif après visite technique et validation du service concerné.',
+    category: rule.category,
+    subCategory,
+    lines: rule.lines.map(label => ({ label })),
+    mainWork: rule.mainWork,
+    delay: rule.delay,
+    complexity: rule.complexity,
+    disclaimer:
+      'Conseil technique indicatif des travaux à réaliser. Le périmètre définitif sera confirmé après visite technique de l\'équipe éclairage.',
   };
 };
 
-export const buildQuoteMessage = (category: string, subCategory?: string) => {
-  const q = estimateQuote(category, subCategory);
-  const lines = q.lines.map(l => `• ${l.label} : ${formatAR(l.amount)}`).join('\n');
-  return [
-    `🧾 Devis estimatif — ${q.category}${subCategory ? ' (' + subCategory + ')' : ''}`,
-    '',
-    lines,
-    `• ${q.mainLabor.label} : ${formatAR(q.mainLabor.amount)}`,
-    '',
-    `💰 **Total estimé : ${formatAR(q.total)}**`,
-    `⏱️ ${q.delay}`,
-    '',
-    `_${q.disclaimer}_`,
-  ].join('\n');
+// ---- Réponses naturelles de secours (utilisées si le moteur Python est hors ligne) ---
+
+const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
+const INTROS = [
+  'Très bien, voici mon conseil pour **{category}** :',
+  'Avec plaisir, voici les travaux à prévoir pour **{category}** :',
+  'C\'est noté ! Pour **{category}**, je vous recommande les étapes suivantes :',
+  'Je comprends. Voici ce que je vous conseille pour **{category}** :',
+];
+
+const FOLLOW_UPS = [
+  'Souhaitez-vous que je prépare ce signalement pour l\'équipe électrique ?',
+  'Voulez-vous que je transmette ce conseil dans un signalement pour l\'équipe sur site ?',
+  'Faut-il que je crée le signalement associé pour l\'équipe d\'intervention ?',
+];
+
+export const estimateIntro = (category: string): string =>
+  pick(INTROS).replace('{category}', category);
+
+export const estimateFollowUp = (): string => pick(FOLLOW_UPS);
+
+export const formatEstimateReply = (
+  category: string,
+  estimate: WorkEstimate,
+  extra?: string[]
+): string => {
+  const lines: string[] = [estimateIntro(category), ''];
+  estimate.lines.forEach(line => lines.push(`- ${line.label}`));
+  lines.push('', `**Moyens à mobiliser** : ${estimate.mainWork}`);
+  lines.push(`**Délai souhaitable** : ${estimate.delay}`, '');
+  if (extra) lines.push(...extra, '');
+  lines.push(`_Conseil technique indicatif : seule l'équipe sur site valide le périmètre définitif. Aucun tarif n'est communiqué._`, '');
+  lines.push(estimateFollowUp());
+  return lines.join('\n');
 };

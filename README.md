@@ -8,4 +8,7 @@
   Run `npm i` to install the dependencies.
 
   Run `npm run dev` to start the development server.
+
+  api ity: 
   
+  cd backend; uvicorn main:app --reload --port 8000

@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useAppContext, Report, ReportStatus, ReportPriority } from '../../context/AppContext';
-import { Search, Filter, MapPin, X, Sparkles, Building, Map as MapIcon, ArrowRight, Phone, Clock, Users, Banknote, Bot, MessageSquare } from 'lucide-react';
+import { Search, Filter, MapPin, X, Sparkles, Building, Map as MapIcon, ArrowRight, Phone, Clock, Users, Wrench, Zap, MessageSquare, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import ReportImage from '../../components/figma/ReportImage';
-import { estimateQuote, formatAR } from '../../services/QuoteService';
+import { estimateWork } from '../../services/QuoteService';
 
 export default function ManageReports() {
-  const { reports, updateReportStatus, updateReportPriority, assignTeam } = useAppContext();
+  const { reports, updateReportStatus, updateReportPriority, assignTeam, deleteReport } = useAppContext();
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>(searchParams.get('status') || 'Tous');
   const [filterPriority, setFilterPriority] = useState<string>(searchParams.get('priority') || 'Toutes');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Report | null>(null);
 
   // Réagit quand on clique sur une carte du tableau de bord
   useEffect(() => {
@@ -43,12 +44,10 @@ export default function ManageReports() {
   };
 
   const teams = [
-    'Équipe Voirie N1',
     'Équipe Électrique Nord',
-    'Service Nettoyage',
-    'Service Plomberie',
-    'Maintenance Bâtiments',
-    'Équipe Polyvalente',
+    'Équipe Éclairage Sud',
+    'Équipe Éclairage Centre',
+    'Prestataire Éclairage',
     'Non assigné'
   ];
 
@@ -202,12 +201,21 @@ export default function ManageReports() {
                       </select>
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedReport(report); }}
-                        className="px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 rounded-lg transition-colors flex items-center"
-                      >
-                        Voir détails <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedReport(report); }}
+                          className="px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 rounded-lg transition-colors flex items-center"
+                        >
+                          Voir détails <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDelete(report); }}
+                          title="Supprimer le signalement"
+                          className="p-1.5 text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -225,8 +233,35 @@ export default function ManageReports() {
           onChangeStatus={(s) => updateReportStatus(selectedReport.id, s)}
           onChangePriority={(p) => updateReportPriority(selectedReport.id, p)}
           onChangeTeam={(t) => assignTeam(selectedReport.id, t)}
+          onDelete={(r) => { setSelectedReport(null); setConfirmDelete(r); }}
           teams={teams}
         />
+      )}
+
+      {/* ---- Confirmation suppression ---- */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onClick={() => setConfirmDelete(null)}>
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="font-bold text-slate-800 text-lg">Supprimer ce signalement ?</h3>
+            <p className="text-sm text-slate-500 mt-2">
+              Le signalement « {confirmDelete.title} » sera définitivement supprimé.
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors">
+                Annuler
+              </button>
+              <button
+                onClick={() => { deleteReport(confirmDelete.id); setConfirmDelete(null); }}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-colors"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -252,6 +287,7 @@ function ReportDetailModal({
   onChangeStatus,
   onChangePriority,
   onChangeTeam,
+  onDelete,
   teams,
 }: {
   report: Report;
@@ -259,10 +295,11 @@ function ReportDetailModal({
   onChangeStatus: (s: ReportStatus) => void;
   onChangePriority: (p: ReportPriority) => void;
   onChangeTeam: (t: string) => void;
+  onDelete: (r: Report) => void;
   teams: string[];
 }) {
   const navigate = useNavigate();
-  const quote = estimateQuote(report.category, report.subCategory);
+  const estimate = estimateWork(report.category, report.subCategory);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onClick={onClose}>
@@ -327,27 +364,29 @@ function ReportDetailModal({
             <span>{report.location}</span>
           </div>
 
-          {/* Quote estimate */}
+          {/* Travaux estimés */}
           <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center">
-                <Banknote className="w-4 h-4 mr-1.5" /> Devis estimatif
+                <Wrench className="w-4 h-4 mr-1.5" /> Estimation des travaux
               </p>
-              <span className="text-xl font-extrabold text-emerald-700">{formatAR(quote.total)}</span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                {estimate.complexity}
+              </span>
             </div>
-            <div className="space-y-1 text-xs text-slate-600">
-              {quote.lines.map((l, i) => (
-                <div key={i} className="flex justify-between">
+            <div className="space-y-1.5 text-xs text-slate-600">
+              {estimate.lines.map((l, i) => (
+                <div key={i} className="flex items-start">
+                  <Zap className="w-3.5 h-3.5 mr-2 text-amber-500 flex-shrink-0 mt-px" />
                   <span>{l.label}</span>
-                  <span className="font-semibold">{formatAR(l.amount)}</span>
                 </div>
               ))}
-              <div className="flex justify-between font-semibold text-amber-700">
-                <span>{quote.mainLabor.label}</span>
-                <span>{formatAR(quote.mainLabor.amount)}</span>
+              <div className="flex justify-between font-semibold text-amber-700 pt-1 border-t border-emerald-100">
+                <span>Moyens / main d'œuvre</span>
+                <span className="text-right max-w-[55%]">{estimate.mainWork}</span>
               </div>
             </div>
-            <p className="text-[10px] text-slate-400 italic mt-2">⏱️ {quote.delay} · {quote.disclaimer}</p>
+            <p className="text-[10px] text-slate-400 italic mt-2">⏱️ {estimate.delay} · {estimate.disclaimer}</p>
           </div>
 
           {/* Assignment controls */}
@@ -400,11 +439,14 @@ function ReportDetailModal({
               <MessageSquare className="w-4 h-4" /> Discuter avec l'auteur
             </button>
             <button onClick={() => navigate('/admin/assistant')} className="flex-1 flex items-center justify-center gap-2 text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl transition-colors">
-              <Bot className="w-4 h-4 text-emerald-600" /> Estimer via agent
+              <Wrench className="w-4 h-4 text-emerald-600" /> Estimer les travaux
             </button>
           </div>
           <button onClick={() => navigate('/admin/messages')} className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-50 py-2 rounded-lg transition-colors">
-            <Phone className="w-3.5 h-3.5" /> Contacter l'équipe assignée ({report.assignedTeam || 'Équipe Polyvalente'})
+            <Phone className="w-3.5 h-3.5" /> Contacter l'équipe assignée ({report.assignedTeam || 'Équipe Électrique Nord'})
+          </button>
+          <button onClick={() => onDelete(report)} className="w-full flex items-center justify-center gap-2 text-xs font-bold text-red-600 hover:bg-red-50 py-2 rounded-lg transition-colors">
+            <Trash2 className="w-3.5 h-3.5" /> Supprimer ce signalement
           </button>
 
           <p className="text-[10px] text-slate-400 text-center flex items-center justify-center">

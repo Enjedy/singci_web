@@ -13,6 +13,7 @@ import {
   updateReportStatus as supabaseUpdateStatus,
   updateReportPriority as supabaseUpdatePriority,
   assignTeamToReport as supabaseAssignTeam,
+  deleteReport as supabaseDeleteReport,
   isSupabaseConfigured,
 } from '../services/SupabaseService';
 
@@ -40,10 +41,10 @@ export interface Report {
 const initialReports: Report[] = [
   {
     id: 'REP-001',
-    title: 'Nid de poule dangereux',
-    description: 'Un grand nid de poule sur la voie de droite qui endommage les pneus des voitures.',
-    category: 'Voirie',
-    subCategory: 'Nid de poule',
+    title: 'Lampadaire clignotant avenue de la République',
+    description: 'Le lampadaire clignote sans arrêt depuis plusieurs nuits, la rue est mal éclairée.',
+    category: 'Éclairage public',
+    subCategory: 'Lampadaire clignotant',
     signalType: 'Espace public',
     status: 'En attente',
     priority: 'Haute',
@@ -52,14 +53,14 @@ const initialReports: Report[] = [
     imageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=400',
     citizenId: 'CIT-123',
     aiAnalyzed: true,
-    assignedTeam: 'Équipe Voirie N1'
+    assignedTeam: 'Équipe Électrique Nord'
   },
   {
     id: 'REP-002',
     title: 'Lampadaire cassé',
     description: 'Le lampadaire clignote sans arrêt depuis 3 jours, rendant le trottoir très sombre la nuit.',
     category: 'Éclairage public',
-    subCategory: 'Panne d\'éclairage',
+    subCategory: 'Lampadaire cassé',
     signalType: 'Espace public',
     status: 'En cours',
     priority: 'Moyenne',
@@ -79,6 +80,7 @@ interface AppContextType {
   updateReportStatus: (id: string, status: ReportStatus) => void;
   updateReportPriority: (id: string, priority: ReportPriority) => void;
   assignTeam: (id: string, team: string) => void;
+  deleteReport: (id: string) => void;
   refreshReports: () => Promise<void>;
   isAuthenticated: boolean;
   user: User | null;
@@ -92,14 +94,14 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Seul l'éclairage public est géré : tous les signalements partent
+// directement à l'équipe électrique (agent éclairage).
 const getTeamForCategory = (category: string) => {
   const cat = category.toLowerCase();
-  if (cat.includes('voirie') || cat.includes('route')) return 'Équipe Voirie N1';
-  if (cat.includes('éclairage') || cat.includes('électricité')) return 'Équipe Électrique Nord';
-  if (cat.includes('eau') || cat.includes('plomberie')) return 'Service Plomberie';
-  if (cat.includes('propreté') || cat.includes('déchet')) return 'Service Nettoyage';
-  if (cat.includes('école') || cat.includes('bâtiment')) return 'Maintenance Bâtiments';
-  return 'Équipe Polyvalente';
+  if (cat.includes('éclairage') || cat.includes('électricité') || cat.includes('lumière') || cat.includes('lampadaire')) {
+    return 'Équipe Électrique Nord';
+  }
+  return 'Équipe Électrique Nord';
 };
 
 const simulateAIAnalysis = (description: string, category: string) => {
@@ -262,6 +264,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (isSupabaseConfigured()) supabaseAssignTeam(id, dbTeam);
   };
 
+  const deleteReport = (id: string) => {
+    setReports(prev => prev.filter(r => r.id !== id));
+    if (isSupabaseConfigured()) supabaseDeleteReport(id);
+  };
+
   return (
     <AppContext.Provider value={{
       reports,
@@ -271,6 +278,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       updateReportStatus,
       updateReportPriority,
       assignTeam,
+      deleteReport,
       refreshReports,
       isAuthenticated,
       user,

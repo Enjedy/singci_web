@@ -13,7 +13,7 @@ export default function AdminLayout() {
     { name: 'Signalements', path: '/admin/reports', icon: AlertTriangle },
     { name: 'Carte', path: '/admin/map', icon: Map },
     { name: 'Messagerie', path: '/admin/messages', icon: MessageSquare },
-    { name: 'Assistant Devis', path: '/admin/assistant', icon: Bot },
+    { name: 'Assistant Éclairage', path: '/admin/assistant', icon: Bot },
     { name: 'Équipes', path: '/admin/teams', icon: Users },
     { name: 'Paramètres', path: '/admin/settings', icon: Settings },
   ];
